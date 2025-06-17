@@ -2,6 +2,7 @@ import gradio as gr
 import asyncio
 import edge_tts
 import tempfile
+import os  # 👈 Added for Render port
 
 # 🌍 Language and voice mappings
 language_voice_map = {
@@ -116,4 +117,6 @@ with gr.Blocks(css=custom_css, title="💠 Viddyx Official Voice Generator") as 
     generate_btn.click(fn=run_tts, inputs=[text_input, language, voice], outputs=audio_output)
     language.change(fn=update_voices, inputs=language, outputs=voice)
 
-app.launch(server_name="0.0.0.0", server_port=10000)
+# 🔗 Launch for Render deployment
+port = int(os.environ.get("PORT", 7860))
+app.launch(server_name="0.0.0.0", server_port=port)
