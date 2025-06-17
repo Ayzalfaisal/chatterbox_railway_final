@@ -104,15 +104,20 @@ with gr.Blocks(css=custom_css, title="💠 Viddyx Official Voice Generator") as 
         download_output = gr.File(label="⬇️ Download")
 
     with gr.Row():
-        status = gr.Markdown("")
+        status = gr.Markdown("")  # Output status as text
 
     def wrapped_generate(text, language, voice):
-        status.update("⏳ Generating... please wait")
-        result = run_tts(text, language, voice)
-        status.update("✅ Done!") if result else status.update("❌ Failed to generate.")
-        return result, result
+        audio_path = run_tts(text, language, voice)
+        if audio_path:
+            return audio_path, audio_path, "✅ Done!"
+        else:
+            return None, None, "❌ Failed to generate audio."
 
-    generate_btn.click(fn=wrapped_generate, inputs=[text_input, language, voice], outputs=[audio_output, download_output])
+    generate_btn.click(
+        fn=wrapped_generate,
+        inputs=[text_input, language, voice],
+        outputs=[audio_output, download_output, status]
+    )
 
     language.change(fn=update_voices, inputs=language, outputs=voice)
 
