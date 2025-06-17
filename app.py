@@ -6,8 +6,48 @@ import os
 
 # 🌍 Language and voice mappings
 language_voice_map = {
-    "English US": [("🧔 Guy", "en-US-GuyNeural"), ("🧔 Eric", "en-US-EricNeural")],
-    "Urdu": [("🧔 Asad", "ur-PK-AsadNeural"), ("👩 Uzma", "ur-PK-UzmaNeural")]
+    "English US": [
+        ("🧔 Guy", "en-US-GuyNeural"),
+        ("🧔 Eric", "en-US-EricNeural"),
+        ("🧔 Davis", "en-US-DavisNeural"),
+        ("🧔 Christopher", "en-US-ChristopherNeural"),
+        ("🧔 Andrew", "en-US-AndrewNeural"),
+        ("🧔 Brian", "en-US-BrianNeural"),
+        ("🧔 Roger", "en-US-RogerNeural"),
+        ("🧔 Steffan", "en-US-SteffanNeural"),
+        ("🧔 Tony", "en-US-TonyNeural"),
+        ("🧔 Jacob", "en-US-JacobNeural"),
+        ("🧔 Jason", "en-US-JasonNeural"),
+        ("🧔 Henry", "en-US-HenryNeural"),
+        ("🧔 Alan", "en-US-AlanNeural"),
+        ("🧔 Walt", "en-US-WaltNeural"),
+        ("🧔 Grant", "en-US-GrantNeural"),
+        ("🧔 Brandon", "en-US-BrandonNeural"),
+        ("🧔 Brandon Multi", "en-US-BrandonMultilingualNeural"),
+        ("🧔 Andrew Multi", "en-US-AndrewMultilingualNeural"),
+        ("🧔 Brian Multi", "en-US-BrianMultilingualNeural"),
+        ("🧔 Tony Multi", "en-US-TonyMultilingualNeural")
+    ],
+    "English UK": [
+        ("🧔 Ryan", "en-GB-RyanNeural"),
+        ("👩 Sonia", "en-GB-SoniaNeural")
+    ],
+    "Urdu": [
+        ("🧔 Asad", "ur-PK-AsadNeural"),
+        ("👩 Uzma", "ur-PK-UzmaNeural")
+    ],
+    "Spanish": [
+        ("🧔 Alvaro", "es-ES-AlvaroNeural"),
+        ("👩 Elvira", "es-ES-ElviraNeural")
+    ],
+    "French": [
+        ("🧔 Henri", "fr-FR-HenriNeural"),
+        ("👩 Denise", "fr-FR-DeniseNeural")
+    ],
+    "German": [
+        ("🧔 Conrad", "de-DE-ConradNeural"),
+        ("👩 Katja", "de-DE-KatjaNeural")
+    ]
 }
 
 # 🔊 Async TTS
@@ -64,7 +104,7 @@ with gr.Blocks(css=custom_css, title="💠 Viddyx Official Voice Generator") as 
         download_output = gr.File(label="⬇️ Download")
 
     with gr.Row():
-        status = gr.Markdown("")  # For loading status
+        status = gr.Markdown("")
 
     def wrapped_generate(text, language, voice):
         status.update("⏳ Generating... please wait")
