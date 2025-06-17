@@ -116,4 +116,4 @@ with gr.Blocks(css=custom_css, title="💠 Viddyx Official Voice Generator") as 
     generate_btn.click(fn=run_tts, inputs=[text_input, language, voice], outputs=audio_output)
     language.change(fn=update_voices, inputs=language, outputs=voice)
 
-app.launch(share=True)
+app.launch(server_name="0.0.0.0", server_port=10000)
