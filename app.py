@@ -61,13 +61,6 @@ async def generate_audio(text, voice_id):
         print("Edge TTS Error:", str(e))
         return None
 
-def run_tts(text, language, voice_label):
-    voices = language_voice_map.get(language, [])
-    voice_id = next((v for (label, v) in voices if label == voice_label), None)
-    if not voice_id or not text:
-        return None
-    return asyncio.run(generate_audio(text, voice_id))
-
 # 🎨 Custom CSS
 custom_css = """
 body { background-color: #000; color: #fff; font-family: 'Segoe UI', sans-serif; }
@@ -81,10 +74,21 @@ textarea, input, select { background-color: #111 !important; color: #fff !import
 def update_voices(language):
     return gr.update(choices=[label for (label, _) in language_voice_map[language]], value=None)
 
-def play_sample(voice_label, language):
+async def play_sample(voice_label, language):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice_label), None)
-    return asyncio.run(generate_audio("This is a voice sample", voice_id))
+    return await generate_audio("This is a voice sample", voice_id)
+
+async def wrapped_generate(text, language, voice):
+    voices = language_voice_map.get(language, [])
+    voice_id = next((v for (label, v) in voices if label == voice), None)
+    if not voice_id or not text:
+        return None, None, "❌ Voice or text missing."
+    audio_path = await generate_audio(text, voice_id)
+    if audio_path:
+        return audio_path, audio_path, "✅ Done!"
+    else:
+        return None, None, "❌ Failed to generate audio."
 
 with gr.Blocks(css=custom_css, title="💠 Viddyx Official Voice Generator") as app:
     gr.Markdown("# 💠 Viddyx Official Voice Generator")
@@ -104,14 +108,7 @@ with gr.Blocks(css=custom_css, title="💠 Viddyx Official Voice Generator") as 
         download_output = gr.File(label="⬇️ Download")
 
     with gr.Row():
-        status = gr.Markdown("")  # Output status as text
-
-    def wrapped_generate(text, language, voice):
-        audio_path = run_tts(text, language, voice)
-        if audio_path:
-            return audio_path, audio_path, "✅ Done!"
-        else:
-            return None, None, "❌ Failed to generate audio."
+        status = gr.Markdown("")  # Output status
 
     generate_btn.click(
         fn=wrapped_generate,
