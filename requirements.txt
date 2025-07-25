@@ -1,4 +1,6 @@
 gradio
 edge-tts
 elevenlabs
-
+TTS==0.22.0
+torch
+torchaudio
