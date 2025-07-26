@@ -59,7 +59,7 @@ language_voice_map = {
     ]
 }
 
-# ✂️ Split text
+# ✂️ Split text into chunks
 def split_text(text, max_chars=4500):
     words = text.split()
     chunks, current = [], ""
@@ -84,14 +84,21 @@ async def generate_audio(text, voice_id):
         print("TTS Error:", str(e))
         return None
 
+# Update voices dropdown
 def update_voices(language):
     return gr.update(choices=[label for (label, _) in language_voice_map[language]], value=None)
 
+# Play sample async
 async def play_sample(voice_label, language):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice_label), None)
     return await generate_audio("This is a voice sample", voice_id)
 
+# Sync wrapper for Gradio
+def play_sample_sync(voice_label, language):
+    return asyncio.run(play_sample(voice_label, language))
+
+# Generate full audio with merging
 async def wrapped_generate(text, language, voice):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice), None)
@@ -124,36 +131,47 @@ async def wrapped_generate(text, language, voice):
     duration_str = str(datetime.timedelta(seconds=int(float(info['duration']))))
     yield merged_path, merged_path, f"✅ Done! Total duration: {duration_str}"
 
-# 🌈 Premium Gradient CSS
+# 🌈 Premium Card UI CSS
 premium_css = """
 body {
-  background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+  background: radial-gradient(circle at top, #1a1a1a, #0e0e0e);
   font-family: 'Poppins', sans-serif;
   color: #eaeaea;
 }
+
 h1 {
-  font-size: 42px !important;
+  font-size: 46px !important;
   font-weight: bold !important;
-  background: linear-gradient(90deg, #f5d142, #c084fc, #9333ea);
+  background: linear-gradient(90deg, #ffde59, #c084fc, #9333ea);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-align: center;
-  text-shadow: 0px 0px 15px rgba(192,132,252,0.3);
+  text-shadow: 0px 0px 20px rgba(255, 222, 89, 0.5);
+  margin-bottom: 20px !important;
 }
+
+.gr-block, .gr-box, .gr-row, .gr-panel {
+  background: rgba(30, 30, 30, 0.85) !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  box-shadow: 0px 8px 20px rgba(0,0,0,0.5) !important;
+}
+
 .gr-button {
-  background: linear-gradient(90deg, #c084fc, #9333ea);
+  background: linear-gradient(135deg, #c084fc, #9333ea);
   border: none;
   color: white;
   font-weight: bold;
   border-radius: 12px;
-  padding: 12px;
+  padding: 12px 20px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .gr-button:hover {
   transform: scale(1.05);
-  box-shadow: 0px 4px 15px rgba(192,132,252,0.5);
+  box-shadow: 0px 4px 20px rgba(192,132,252,0.6);
 }
-textarea, input, select {
+
+textarea, select, input {
   background-color: #222 !important;
   color: #fff !important;
   border: 1px solid #555 !important;
@@ -171,7 +189,7 @@ with gr.Blocks(css=premium_css, title="✨ Viddyx Premium Voice Generator") as a
         voice = gr.Dropdown(label="🧑‍🎤 Choose Voice")
 
     sample_audio = gr.Audio(label="🔊 Voice Preview", type="filepath")
-    gr.Button("🎧 Preview Voice").click(fn=play_sample, inputs=[voice, language], outputs=sample_audio)
+    gr.Button("🎧 Preview Voice").click(fn=play_sample_sync, inputs=[voice, language], outputs=sample_audio)
 
     text_input = gr.Textbox(label="📜 Enter your text", placeholder="Type or paste your script here...", lines=5)
 
