@@ -177,5 +177,6 @@ with gr.Blocks(css=custom_css, title="🔠 Viddyx Official Voice Generator") as 
     language.change(fn=update_voices, inputs=language, outputs=voice)
 
 # 🚀 Launch app
-port = int(os.environ.get("PORT", 7860))
-app.launch(server_name="0.0.0.0", server_port=port, share=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))  # Railway uses dynamic PORT
+    app.launch(server_name="0.0.0.0", server_port=port, share=False)
