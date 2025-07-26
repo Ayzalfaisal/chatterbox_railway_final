@@ -1,5 +1,0 @@
-[build]
-builder = "Docker"
-
-[start]
-cmd = "python app.py"
