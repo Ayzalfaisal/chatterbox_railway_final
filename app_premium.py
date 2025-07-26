@@ -93,14 +93,24 @@ def update_voices(language):
 async def play_sample(voice_label, language):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice_label), None)
+
+    if not voice_id:  # Default voice if not found
+        print("No voice ID found, using default voice.")
+        voice_id = "en-US-GuyNeural"
+
     return await generate_audio("This is a voice sample", voice_id)
 
 # 🔁 Full generation with chunking and merge
 async def wrapped_generate(text, language, voice):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice), None)
-    if not voice_id or not text:
-        yield None, None, "❌ Voice or text missing."
+
+    if not voice_id:
+        print("No voice ID found for generation. Using default voice.")
+        voice_id = "en-US-GuyNeural"
+
+    if not text:
+        yield None, None, "❌ No text provided."
         return
 
     chunks = split_text(text)
@@ -115,7 +125,7 @@ async def wrapped_generate(text, language, voice):
             yield None, None, status_str
 
             output_path = await generate_audio(chunk, voice_id)
-            await asyncio.sleep(0.1)  # brief delay to prevent overload
+            await asyncio.sleep(0.1)
             if output_path:
                 temp_audio_files.append(output_path)
             else:
@@ -139,30 +149,16 @@ async def wrapped_generate(text, language, voice):
 
     yield merged_path, merged_path, final_status
 
-# 💻 Premium UI with gradient heading
+# 💻 UI Layout with Gradient Heading
 custom_css = """
-body { background-color: #0e0e12; color: #fff; font-family: 'Segoe UI', sans-serif; }
-h1 {
-    font-size: 38px !important;
-    font-weight: bold !important;
-    text-align: center;
-    background: linear-gradient(to right, #fbbf24, #a855f7, #ec4899);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-label, .block-title { font-weight: bold !important; color: #e5e5e5 !important; }
-textarea, input, select {
-    background-color: #1a1a1f !important;
-    color: #fff !important;
-    border: 1px solid #444 !important;
-    border-radius: 6px !important;
-}
-.gr-button {
-    background: linear-gradient(to right, #a855f7, #ec4899);
-    color: #fff !important;
-    font-weight: bold;
-    border-radius: 8px !important;
-}
+body { background-color: #0d0d0d; color: #fff; font-family: 'Segoe UI', sans-serif; }
+h1 { font-size: 36px !important; font-weight: bold !important; 
+     background: linear-gradient(to right, #ffb6c1, #c084fc);
+     -webkit-background-clip: text; color: transparent; text-align: center; 
+     text-shadow: 0 0 10px rgba(192, 132, 252, 0.5);}
+label, .block-title { font-weight: bold !important; color: #ffffff !important; }
+textarea, input, select { background-color: #111 !important; color: #fff !important; border: 1px solid #444 !important; border-radius: 8px; }
+.gr-button { background: linear-gradient(to right, #c084fc, #a855f7) !important; color: white !important; font-weight: bold; border-radius: 8px; }
 """
 
 with gr.Blocks(css=custom_css, title="✨ Viddyx Premium Voice Generator") as app:
