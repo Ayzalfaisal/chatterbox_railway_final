@@ -7,7 +7,7 @@ import datetime
 from pydub import AudioSegment
 from pydub.utils import mediainfo
 
-# 🌍 Language and voice mappings
+# 🌍 Language and voice mappings (All Voices Restored)
 language_voice_map = {
     "English US": [
         ("🧔 Guy", "en-US-GuyNeural"),
@@ -17,7 +17,23 @@ language_voice_map = {
         ("🧔 Andrew", "en-US-AndrewNeural"),
         ("🧔 Brian", "en-US-BrianNeural"),
         ("🧔 Roger", "en-US-RogerNeural"),
-        ("🧔 Tony", "en-US-TonyNeural")
+        ("🧔 Steffan", "en-US-SteffanNeural"),
+        ("🧔 Tony", "en-US-TonyNeural"),
+        ("🧔 Jacob", "en-US-JacobNeural"),
+        ("🧔 Jason", "en-US-JasonNeural"),
+        ("🧔 Henry", "en-US-HenryNeural"),
+        ("🧔 Alan", "en-US-AlanNeural"),
+        ("🧔 Walt", "en-US-WaltNeural"),
+        ("🧔 Grant", "en-US-GrantNeural"),
+        ("🧔 Brandon", "en-US-BrandonNeural"),
+        ("🧔 Brandon Multi", "en-US-BrandonMultilingualNeural"),
+        ("🧔 Andrew Multi", "en-US-AndrewMultilingualNeural"),
+        ("🧔 Brian Multi", "en-US-BrianMultilingualNeural"),
+        ("🧔 Tony Multi", "en-US-TonyMultilingualNeural")
+    ],
+    "English UK": [
+        ("🧔 Ryan", "en-GB-RyanNeural"),
+        ("👩 Sonia", "en-GB-SoniaNeural")
     ],
     "Urdu": [
         ("🧔 Asad", "ur-PK-AsadNeural"),
@@ -26,10 +42,24 @@ language_voice_map = {
     "Spanish": [
         ("🧔 Alvaro", "es-ES-AlvaroNeural"),
         ("👩 Elvira", "es-ES-ElviraNeural")
+    ],
+    "French": [
+        ("🧔 Henri", "fr-FR-HenriNeural"),
+        ("👩 Denise", "fr-FR-DeniseNeural")
+    ],
+    "German": [
+        ("🧔 Conrad", "de-DE-ConradNeural"),
+        ("👩 Katja", "de-DE-KatjaNeural")
+    ],
+    "Portuguese": [
+        ("👩 Francisca", "pt-BR-FranciscaNeural"),
+        ("👩 Raquel", "pt-PT-RaquelNeural"),
+        ("🧔 Antonio", "pt-BR-AntonioNeural"),
+        ("🧔 Duarte", "pt-PT-DuarteNeural")
     ]
 }
 
-# ✂️ Split text into chunks
+# ✂️ Split text
 def split_text(text, max_chars=4500):
     words = text.split()
     chunks, current = [], ""
@@ -43,7 +73,7 @@ def split_text(text, max_chars=4500):
         chunks.append(current.strip())
     return chunks
 
-# 🔊 Async TTS generation
+# 🔊 Async TTS
 async def generate_audio(text, voice_id):
     out_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
     try:
