@@ -7,7 +7,7 @@ import datetime
 from pydub import AudioSegment
 from pydub.utils import mediainfo
 
-# 🌍 Language and voice mappings (All Voices Restored)
+# 🌍 Language and voice mappings
 language_voice_map = {
     "English US": [
         ("🧔 Guy", "en-US-GuyNeural"),
@@ -59,46 +59,46 @@ language_voice_map = {
     ]
 }
 
-# ✂️ Split text into chunks
+# Split text into chunks
 def split_text(text, max_chars=4500):
     words = text.split()
-    chunks, current = [], ""
-    for w in words:
-        if len(current) + len(w) + 1 <= max_chars:
-            current += " " + w
+    chunks = []
+    current_chunk = ""
+    for word in words:
+        if len(current_chunk) + len(word) + 1 <= max_chars:
+            current_chunk += " " + word
         else:
-            chunks.append(current.strip())
-            current = w
-    if current:
-        chunks.append(current.strip())
+            chunks.append(current_chunk.strip())
+            current_chunk = word
+    if current_chunk:
+        chunks.append(current_chunk.strip())
     return chunks
 
-# 🔊 Async TTS
+# Generate audio
 async def generate_audio(text, voice_id):
-    out_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
+    output_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
     try:
         communicate = edge_tts.Communicate(text, voice=voice_id)
-        await communicate.save(out_file)
-        return out_file
+        await communicate.save(output_file)
+        return output_file
     except Exception as e:
-        print("TTS Error:", str(e))
+        print("Edge TTS Error:", str(e))
         return None
 
-# Update voices dropdown
+# Update voices by language
 def update_voices(language):
-    return gr.update(choices=[label for (label, _) in language_voice_map[language]], value=None)
+    voice_choices = [label for (label, _) in language_voice_map.get(language, [])]
+    return gr.update(choices=voice_choices, value=voice_choices[0] if voice_choices else None)
 
-# Play sample async
+# Play voice sample
 async def play_sample(voice_label, language):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice_label), None)
-    return await generate_audio("This is a voice sample", voice_id)
+    if not voice_id:
+        return None
+    return await generate_audio("This is a voice sample.", voice_id)
 
-# Sync wrapper for Gradio
-def play_sample_sync(voice_label, language):
-    return asyncio.run(play_sample(voice_label, language))
-
-# Generate full audio with merging
+# Full generation
 async def wrapped_generate(text, language, voice):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice), None)
@@ -107,18 +107,25 @@ async def wrapped_generate(text, language, voice):
         return
 
     chunks = split_text(text)
+    total_chunks = len(chunks)
     temp_audio_files = []
-    status_msgs = []
+    status_messages = []
 
     for i, chunk in enumerate(chunks):
-        status_msgs.append(f"🔄 Generating chunk {i+1}/{len(chunks)}...")
-        yield None, None, "\n".join(status_msgs)
-        output_path = await generate_audio(chunk, voice_id)
-        await asyncio.sleep(0.1)
-        if output_path:
-            temp_audio_files.append(output_path)
-        else:
-            yield None, None, f"❌ Failed at chunk {i+1}"
+        try:
+            status_messages.append(f"🔄 Generating chunk {i+1}/{total_chunks}...")
+            status_str = "\n".join(status_messages)
+            yield None, None, status_str
+
+            output_path = await generate_audio(chunk, voice_id)
+            await asyncio.sleep(0.1)
+            if output_path:
+                temp_audio_files.append(output_path)
+            else:
+                yield None, None, f"❌ Failed at chunk {i+1}"
+                return
+        except Exception as e:
+            yield None, None, f"❌ Error in chunk {i+1}: {str(e)}"
             return
 
     final_audio = AudioSegment.empty()
@@ -127,69 +134,41 @@ async def wrapped_generate(text, language, voice):
 
     merged_path = os.path.join(tempfile.gettempdir(), f"voice_output_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3")
     final_audio.export(merged_path, format="mp3")
+
     info = mediainfo(merged_path)
-    duration_str = str(datetime.timedelta(seconds=int(float(info['duration']))))
-    yield merged_path, merged_path, f"✅ Done! Total duration: {duration_str}"
+    duration_sec = float(info['duration'])
+    duration_str = str(datetime.timedelta(seconds=int(duration_sec)))
+    final_status = f"✅ Done! Total duration: {duration_str}"
 
-# 🌈 Premium Card UI CSS
-premium_css = """
-body {
-  background: radial-gradient(circle at top, #1a1a1a, #0e0e0e);
-  font-family: 'Poppins', sans-serif;
-  color: #eaeaea;
-}
+    yield merged_path, merged_path, final_status
 
-h1 {
-  font-size: 46px !important;
-  font-weight: bold !important;
-  background: linear-gradient(90deg, #ffde59, #c084fc, #9333ea);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-align: center;
-  text-shadow: 0px 0px 20px rgba(255, 222, 89, 0.5);
-  margin-bottom: 20px !important;
-}
 
-.gr-block, .gr-box, .gr-row, .gr-panel {
-  background: rgba(30, 30, 30, 0.85) !important;
-  border-radius: 16px !important;
-  padding: 20px !important;
-  box-shadow: 0px 8px 20px rgba(0,0,0,0.5) !important;
+# CSS Premium Look
+custom_css = """
+body { background-color: #0e0e10; color: #fff; font-family: 'Segoe UI', sans-serif; }
+h1 { 
+    font-size: 38px !important; 
+    font-weight: bold !important; 
+    background: linear-gradient(90deg, #f8bfff, #c084fc, #84fab0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    text-shadow: 0px 0px 20px #c084fc;
 }
-
-.gr-button {
-  background: linear-gradient(135deg, #c084fc, #9333ea);
-  border: none;
-  color: white;
-  font-weight: bold;
-  border-radius: 12px;
-  padding: 12px 20px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.gr-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0px 4px 20px rgba(192,132,252,0.6);
-}
-
-textarea, select, input {
-  background-color: #222 !important;
-  color: #fff !important;
-  border: 1px solid #555 !important;
-  border-radius: 8px !important;
-  padding: 10px !important;
-}
+label, .block-title { font-weight: bold !important; color: #ffffff !important; }
+textarea, input, select { background-color: #1a1a1d !important; color: #fff !important; border: 1px solid #444 !important; }
+.gr-button { background: linear-gradient(90deg, #c084fc, #84fab0); color: black !important; font-weight: bold; border-radius: 8px; }
 """
 
-# 🖥️ Premium Layout
-with gr.Blocks(css=premium_css, title="✨ Viddyx Premium Voice Generator") as app:
-    gr.Markdown("# ✨ **Viddyx Premium Voice Generator**")
+with gr.Blocks(css=custom_css, title="✨ Viddyx Premium Voice Generator") as app:
+    gr.Markdown("# ✨ Viddyx Premium Voice Generator")
 
     with gr.Row():
         language = gr.Dropdown(label="🌍 Choose Language", choices=list(language_voice_map.keys()), value="English US")
         voice = gr.Dropdown(label="🧑‍🎤 Choose Voice")
 
     sample_audio = gr.Audio(label="🔊 Voice Preview", type="filepath")
-    gr.Button("🎧 Preview Voice").click(fn=play_sample_sync, inputs=[voice, language], outputs=sample_audio)
+    gr.Button("🎧 Preview Voice").click(fn=play_sample, inputs=[voice, language], outputs=sample_audio)
 
     text_input = gr.Textbox(label="📜 Enter your text", placeholder="Type or paste your script here...", lines=5)
 
@@ -198,7 +177,8 @@ with gr.Blocks(css=premium_css, title="✨ Viddyx Premium Voice Generator") as a
         audio_output = gr.Audio(label="🔊 Output Audio", type="filepath")
         download_output = gr.File(label="⬇️ Download MP3")
 
-    status = gr.Markdown("")
+    with gr.Row():
+        status = gr.Markdown("")
 
     generate_btn.click(
         fn=wrapped_generate,
@@ -208,7 +188,5 @@ with gr.Blocks(css=premium_css, title="✨ Viddyx Premium Voice Generator") as a
 
     language.change(fn=update_voices, inputs=language, outputs=voice)
 
-# 🚀 Launch app
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.launch(server_name="0.0.0.0", server_port=port, share=False)
+port = int(os.environ.get("PORT", 7860))
+app.launch(server_name="0.0.0.0", server_port=port, share=True)
