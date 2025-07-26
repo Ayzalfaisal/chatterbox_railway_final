@@ -17,23 +17,7 @@ language_voice_map = {
         ("🧔 Andrew", "en-US-AndrewNeural"),
         ("🧔 Brian", "en-US-BrianNeural"),
         ("🧔 Roger", "en-US-RogerNeural"),
-        ("🧔 Steffan", "en-US-SteffanNeural"),
-        ("🧔 Tony", "en-US-TonyNeural"),
-        ("🧔 Jacob", "en-US-JacobNeural"),
-        ("🧔 Jason", "en-US-JasonNeural"),
-        ("🧔 Henry", "en-US-HenryNeural"),
-        ("🧔 Alan", "en-US-AlanNeural"),
-        ("🧔 Walt", "en-US-WaltNeural"),
-        ("🧔 Grant", "en-US-GrantNeural"),
-        ("🧔 Brandon", "en-US-BrandonNeural"),
-        ("🧔 Brandon Multi", "en-US-BrandonMultilingualNeural"),
-        ("🧔 Andrew Multi", "en-US-AndrewMultilingualNeural"),
-        ("🧔 Brian Multi", "en-US-BrianMultilingualNeural"),
-        ("🧔 Tony Multi", "en-US-TonyMultilingualNeural")
-    ],
-    "English UK": [
-        ("🧔 Ryan", "en-GB-RyanNeural"),
-        ("👩 Sonia", "en-GB-SoniaNeural")
+        ("🧔 Tony", "en-US-TonyNeural")
     ],
     "Urdu": [
         ("🧔 Asad", "ur-PK-AsadNeural"),
@@ -42,60 +26,42 @@ language_voice_map = {
     "Spanish": [
         ("🧔 Alvaro", "es-ES-AlvaroNeural"),
         ("👩 Elvira", "es-ES-ElviraNeural")
-    ],
-    "French": [
-        ("🧔 Henri", "fr-FR-HenriNeural"),
-        ("👩 Denise", "fr-FR-DeniseNeural")
-    ],
-    "German": [
-        ("🧔 Conrad", "de-DE-ConradNeural"),
-        ("👩 Katja", "de-DE-KatjaNeural")
-    ],
-    "Portuguese": [
-        ("👩 Francisca", "pt-BR-FranciscaNeural"),
-        ("👩 Raquel", "pt-PT-RaquelNeural"),
-        ("🧔 Antonio", "pt-BR-AntonioNeural"),
-        ("🧔 Duarte", "pt-PT-DuarteNeural")
     ]
 }
 
-# ✂️ Split text into smaller chunks
+# ✂️ Split text into chunks
 def split_text(text, max_chars=4500):
     words = text.split()
-    chunks = []
-    current_chunk = ""
-    for word in words:
-        if len(current_chunk) + len(word) + 1 <= max_chars:
-            current_chunk += " " + word
+    chunks, current = [], ""
+    for w in words:
+        if len(current) + len(w) + 1 <= max_chars:
+            current += " " + w
         else:
-            chunks.append(current_chunk.strip())
-            current_chunk = word
-    if current_chunk:
-        chunks.append(current_chunk.strip())
+            chunks.append(current.strip())
+            current = w
+    if current:
+        chunks.append(current.strip())
     return chunks
 
 # 🔊 Async TTS generation
 async def generate_audio(text, voice_id):
-    output_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
+    out_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
     try:
         communicate = edge_tts.Communicate(text, voice=voice_id)
-        await communicate.save(output_file)
-        return output_file
+        await communicate.save(out_file)
+        return out_file
     except Exception as e:
-        print("Edge TTS Error:", str(e))
+        print("TTS Error:", str(e))
         return None
 
-# 📋 Update voices by language
 def update_voices(language):
     return gr.update(choices=[label for (label, _) in language_voice_map[language]], value=None)
 
-# 🔉 Play voice sample
 async def play_sample(voice_label, language):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice_label), None)
     return await generate_audio("This is a voice sample", voice_id)
 
-# 🔁 Full generation with chunking and merge
 async def wrapped_generate(text, language, voice):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice), None)
@@ -104,25 +70,18 @@ async def wrapped_generate(text, language, voice):
         return
 
     chunks = split_text(text)
-    total_chunks = len(chunks)
     temp_audio_files = []
-    status_messages = []
+    status_msgs = []
 
     for i, chunk in enumerate(chunks):
-        try:
-            status_messages.append(f"🔄 Generating chunk {i+1}/{total_chunks}...")
-            status_str = "\n".join(status_messages)
-            yield None, None, status_str
-
-            output_path = await generate_audio(chunk, voice_id)
-            await asyncio.sleep(0.1)  # brief delay to prevent overload
-            if output_path:
-                temp_audio_files.append(output_path)
-            else:
-                yield None, None, f"❌ Failed at chunk {i+1}"
-                return
-        except Exception as e:
-            yield None, None, f"❌ Error in chunk {i+1}: {str(e)}"
+        status_msgs.append(f"🔄 Generating chunk {i+1}/{len(chunks)}...")
+        yield None, None, "\n".join(status_msgs)
+        output_path = await generate_audio(chunk, voice_id)
+        await asyncio.sleep(0.1)
+        if output_path:
+            temp_audio_files.append(output_path)
+        else:
+            yield None, None, f"❌ Failed at chunk {i+1}"
             return
 
     final_audio = AudioSegment.empty()
@@ -131,25 +90,51 @@ async def wrapped_generate(text, language, voice):
 
     merged_path = os.path.join(tempfile.gettempdir(), f"voice_output_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3")
     final_audio.export(merged_path, format="mp3")
-
     info = mediainfo(merged_path)
-    duration_sec = float(info['duration'])
-    duration_str = str(datetime.timedelta(seconds=int(duration_sec)))
-    final_status = f"✅ Done! Total duration: {duration_str}"
+    duration_str = str(datetime.timedelta(seconds=int(float(info['duration']))))
+    yield merged_path, merged_path, f"✅ Done! Total duration: {duration_str}"
 
-    yield merged_path, merged_path, final_status
-
-# 💻 UI Layout
-custom_css = """
-body { background-color: #000; color: #fff; font-family: 'Segoe UI', sans-serif; }
-h1 { font-size: 36px !important; font-weight: bold !important; color: #c084fc !important; text-align: center; }
-label, .block-title { font-weight: bold !important; color: #ffffff !important; }
-textarea, input, select { background-color: #111 !important; color: #fff !important; border: 1px solid #444 !important; }
-.gr-button { background-color: #c084fc !important; color: black !important; font-weight: bold; }
+# 🌈 Premium Gradient CSS
+premium_css = """
+body {
+  background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+  font-family: 'Poppins', sans-serif;
+  color: #eaeaea;
+}
+h1 {
+  font-size: 42px !important;
+  font-weight: bold !important;
+  background: linear-gradient(90deg, #f5d142, #c084fc, #9333ea);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  text-shadow: 0px 0px 15px rgba(192,132,252,0.3);
+}
+.gr-button {
+  background: linear-gradient(90deg, #c084fc, #9333ea);
+  border: none;
+  color: white;
+  font-weight: bold;
+  border-radius: 12px;
+  padding: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.gr-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0px 4px 15px rgba(192,132,252,0.5);
+}
+textarea, input, select {
+  background-color: #222 !important;
+  color: #fff !important;
+  border: 1px solid #555 !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+}
 """
 
-with gr.Blocks(css=custom_css, title="🔠 Viddyx Official Voice Generator") as app:
-    gr.Markdown("# 🔠 Viddyx Official Voice Generator")
+# 🖥️ Premium Layout
+with gr.Blocks(css=premium_css, title="✨ Viddyx Premium Voice Generator") as app:
+    gr.Markdown("# ✨ **Viddyx Premium Voice Generator**")
 
     with gr.Row():
         language = gr.Dropdown(label="🌍 Choose Language", choices=list(language_voice_map.keys()), value="English US")
@@ -161,12 +146,11 @@ with gr.Blocks(css=custom_css, title="🔠 Viddyx Official Voice Generator") as 
     text_input = gr.Textbox(label="📜 Enter your text", placeholder="Type or paste your script here...", lines=5)
 
     with gr.Row():
-        generate_btn = gr.Button("▶️ Generate")
+        generate_btn = gr.Button("▶️ Generate Audio")
         audio_output = gr.Audio(label="🔊 Output Audio", type="filepath")
-        download_output = gr.File(label="⬇️ Download")
+        download_output = gr.File(label="⬇️ Download MP3")
 
-    with gr.Row():
-        status = gr.Markdown("")
+    status = gr.Markdown("")
 
     generate_btn.click(
         fn=wrapped_generate,
@@ -178,5 +162,5 @@ with gr.Blocks(css=custom_css, title="🔠 Viddyx Official Voice Generator") as 
 
 # 🚀 Launch app
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))  # Railway uses dynamic PORT
+    port = int(os.environ.get("PORT", 8080))
     app.launch(server_name="0.0.0.0", server_port=port, share=False)
