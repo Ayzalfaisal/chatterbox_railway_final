@@ -59,7 +59,7 @@ language_voice_map = {
     ]
 }
 
-# Split text into chunks
+# ✂️ Split text into smaller chunks
 def split_text(text, max_chars=4500):
     words = text.split()
     chunks = []
@@ -74,7 +74,7 @@ def split_text(text, max_chars=4500):
         chunks.append(current_chunk.strip())
     return chunks
 
-# Generate audio
+# 🔊 Async TTS generation
 async def generate_audio(text, voice_id):
     output_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
     try:
@@ -85,20 +85,17 @@ async def generate_audio(text, voice_id):
         print("Edge TTS Error:", str(e))
         return None
 
-# Update voices by language
+# 📋 Update voices by language
 def update_voices(language):
-    voice_choices = [label for (label, _) in language_voice_map.get(language, [])]
-    return gr.update(choices=voice_choices, value=voice_choices[0] if voice_choices else None)
+    return gr.update(choices=[label for (label, _) in language_voice_map[language]], value=None)
 
-# Play voice sample
+# 🔉 Play voice sample
 async def play_sample(voice_label, language):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice_label), None)
-    if not voice_id:
-        return None
-    return await generate_audio("This is a voice sample.", voice_id)
+    return await generate_audio("This is a voice sample", voice_id)
 
-# Full generation
+# 🔁 Full generation with chunking and merge
 async def wrapped_generate(text, language, voice):
     voices = language_voice_map.get(language, [])
     voice_id = next((v for (label, v) in voices if label == voice), None)
@@ -118,7 +115,7 @@ async def wrapped_generate(text, language, voice):
             yield None, None, status_str
 
             output_path = await generate_audio(chunk, voice_id)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)  # brief delay to prevent overload
             if output_path:
                 temp_audio_files.append(output_path)
             else:
@@ -142,35 +139,29 @@ async def wrapped_generate(text, language, voice):
 
     yield merged_path, merged_path, final_status
 
-
-# CSS Premium Animated Look
+# 💻 Premium UI with gradient heading
 custom_css = """
-body { background-color: #0e0e10; color: #fff; font-family: 'Segoe UI', sans-serif; }
-h1 { 
-    font-size: 40px !important; 
-    font-weight: bold !important; 
-    background: linear-gradient(90deg, #f8bfff, #c084fc, #84fab0);
+body { background-color: #0e0e12; color: #fff; font-family: 'Segoe UI', sans-serif; }
+h1 {
+    font-size: 38px !important;
+    font-weight: bold !important;
+    text-align: center;
+    background: linear-gradient(to right, #fbbf24, #a855f7, #ec4899);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-align: center;
-    text-shadow: 0px 0px 20px #c084fc;
 }
+label, .block-title { font-weight: bold !important; color: #e5e5e5 !important; }
 textarea, input, select {
-    background-color: #1a1a1d !important; 
-    color: #fff !important; 
+    background-color: #1a1a1f !important;
+    color: #fff !important;
     border: 1px solid #444 !important;
     border-radius: 6px !important;
 }
 .gr-button {
-    background: linear-gradient(90deg, #c084fc, #84fab0);
-    color: black !important;
+    background: linear-gradient(to right, #a855f7, #ec4899);
+    color: #fff !important;
     font-weight: bold;
-    border-radius: 10px;
-    transition: all 0.3s ease-in-out;
-}
-.gr-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0px 0px 12px #84fab0;
+    border-radius: 8px !important;
 }
 """
 
@@ -202,5 +193,6 @@ with gr.Blocks(css=custom_css, title="✨ Viddyx Premium Voice Generator") as ap
 
     language.change(fn=update_voices, inputs=language, outputs=voice)
 
+# 🚀 Launch app
 port = int(os.environ.get("PORT", 7860))
 app.launch(server_name="0.0.0.0", server_port=port, share=True)
