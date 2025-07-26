@@ -143,11 +143,11 @@ async def wrapped_generate(text, language, voice):
     yield merged_path, merged_path, final_status
 
 
-# CSS Premium Look
+# CSS Premium Animated Look
 custom_css = """
 body { background-color: #0e0e10; color: #fff; font-family: 'Segoe UI', sans-serif; }
 h1 { 
-    font-size: 38px !important; 
+    font-size: 40px !important; 
     font-weight: bold !important; 
     background: linear-gradient(90deg, #f8bfff, #c084fc, #84fab0);
     -webkit-background-clip: text;
@@ -155,9 +155,23 @@ h1 {
     text-align: center;
     text-shadow: 0px 0px 20px #c084fc;
 }
-label, .block-title { font-weight: bold !important; color: #ffffff !important; }
-textarea, input, select { background-color: #1a1a1d !important; color: #fff !important; border: 1px solid #444 !important; }
-.gr-button { background: linear-gradient(90deg, #c084fc, #84fab0); color: black !important; font-weight: bold; border-radius: 8px; }
+textarea, input, select {
+    background-color: #1a1a1d !important; 
+    color: #fff !important; 
+    border: 1px solid #444 !important;
+    border-radius: 6px !important;
+}
+.gr-button {
+    background: linear-gradient(90deg, #c084fc, #84fab0);
+    color: black !important;
+    font-weight: bold;
+    border-radius: 10px;
+    transition: all 0.3s ease-in-out;
+}
+.gr-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0px 0px 12px #84fab0;
+}
 """
 
 with gr.Blocks(css=custom_css, title="✨ Viddyx Premium Voice Generator") as app:
