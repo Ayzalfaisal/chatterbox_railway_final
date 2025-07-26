@@ -211,4 +211,5 @@ with gr.Blocks(css=custom_css, title="✨ Viddyx Premium Voice Generator") as ap
 
 # 🚀 Launch app
 port = int(os.environ.get("PORT", 7860))
+app.queue(concurrency_count=5)  # Enables Gradio's queue for streaming
 app.launch(server_name="0.0.0.0", server_port=port, share=True)
