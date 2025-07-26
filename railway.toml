@@ -1,8 +1,5 @@
 [build]
-apt = ["ffmpeg"]
+builder = "Docker"
 
-[deploy]
-numReplicas = 1
-
-[python]
-version = "3.10"
+[start]
+cmd = "python app.py"
